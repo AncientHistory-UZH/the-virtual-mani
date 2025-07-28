@@ -1,44 +1,45 @@
 const express = require('express');
-const { Storage } = require('@google-cloud/storage');
-const { VertexAI } = require('@google-cloud/aiplatform');
+const fs = require('fs/promises'); // Using the promise-based file system module
 const path = require('path');
+const { VertexAI } = require('@google-cloud/aiplatform');
 
 const app = express();
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json());
 const port = process.env.PORT || 8080;
 
-// --- Cloud Storage Configuration ---
-const storage = new Storage();
-const BUCKET_NAME = 'the-virtual-mani'; // <-- IMPORTANT: Make sure this is correct
+// --- Data Path Configuration ---
+// This is the path where the Cloud Storage bucket is mounted inside the container.
+const DATA_PATH = '/data';
 
 // --- Vertex AI (Translation) Configuration ---
-const project = process.env.GCLOUD_PROJECT; // Automatically gets project ID from environment
+const project = process.env.GCLOUD_PROJECT;
 const location = 'us-central1';
 const vertexAI = new VertexAI({ project, location });
 const generativeModel = vertexAI.getGenerativeModel({
   model: 'gemini-1.5-flash-001',
 });
 
-async function getCloudStorageData() {
+// This function now reads from the local filesystem at /data
+async function getManuscriptData() {
     const fileSystemData = { originals: {}, reconstructions: {} };
-    const [folders] = await storage.bucket(BUCKET_NAME).getFiles({ delimiter: '/' });
+    const topLevelFolders = await fs.readdir(DATA_PATH);
 
-    for (const folder of folders.prefixes) {
-        const folderName = folder.replace(/\/$/, '');
-        if (!folderName) continue;
+    for (const folderName of topLevelFolders) {
+        const folderPath = path.join(DATA_PATH, folderName);
+        const files = await fs.readdir(folderPath);
 
-        const [files] = await storage.bucket(BUCKET_NAME).getFiles({ prefix: folder });
-        for (const file of files) {
-            if (file.name.endsWith('.xml') && !file.name.endsWith('_test_input.xml')) {
-                const [content] = await file.download();
-                const fileName = path.basename(file.name);
+        for (const fileName of files) {
+            if (fileName.endsWith('.xml') && !fileName.endsWith('_test_input.xml')) {
+                const filePath = path.join(folderPath, fileName);
+                const content = await fs.readFile(filePath, 'utf8');
+
                 if (folderName === 'originals') {
-                    fileSystemData.originals[fileName] = content.toString('utf8');
+                    fileSystemData.originals[fileName] = content;
                 } else {
                     if (!fileSystemData.reconstructions[folderName]) {
                         fileSystemData.reconstructions[folderName] = {};
                     }
-                    fileSystemData.reconstructions[folderName][fileName] = content.toString('utf8');
+                    fileSystemData.reconstructions[folderName][fileName] = content;
                 }
             }
         }
@@ -49,10 +50,10 @@ async function getCloudStorageData() {
 // API endpoint for fetching manuscript data
 app.get('/api/manuscripts', async (req, res) => {
     try {
-        const data = await getCloudStorageData();
+        const data = await getManuscriptData();
         res.json(data);
     } catch (error) {
-        console.error('Error fetching data from GCS:', error);
+        console.error('Error reading manuscript data from filesystem:', error);
         res.status(500).send('Failed to retrieve manuscript data.');
     }
 });
