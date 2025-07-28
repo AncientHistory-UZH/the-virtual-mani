@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@google-cloud/storage": "^7.11.0",
+    "@google-cloud/aiplatform": "^3.20.0",
     "express": "^4.19.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -16,5 +17,13 @@
     "start": "node server.js",
     "build": "react-scripts build"
   },
-  "browserslist": { "production": [">0.2%", "not dead"], "development": ["last 1 chrome version"] }
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead"
+    ],
+    "development": [
+      "last 1 chrome version"
+    ]
+  }
 }
