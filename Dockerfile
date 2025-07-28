@@ -22,3 +22,4 @@ EXPOSE 8080
 
 # Start the server
 CMD ["npm", "start"]
+

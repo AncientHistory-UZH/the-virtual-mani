@@ -1,7 +1,6 @@
 const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
-const { VertexAI } = require('@google-cloud/aiplatform');
 
 const app = express();
 app.use(express.json());
@@ -10,14 +9,7 @@ const port = process.env.PORT || 8080;
 // This is the path where the Cloud Storage bucket is mounted inside the container.
 const DATA_PATH = '/data';
 
-// Vertex AI (Translation) Configuration
-const project = process.env.GCLOUD_PROJECT;
-const location = 'us-central1';
-const vertexAI = new VertexAI({ project, location });
-const generativeModel = vertexAI.getGenerativeModel({
-  model: 'gemini-1.5-flash-001',
-});
-
+// This function now reads from the local filesystem at /data
 async function getManuscriptData() {
     const fileSystemData = { originals: {}, reconstructions: {} };
     const topLevelFolders = await fs.readdir(DATA_PATH);
@@ -60,21 +52,10 @@ app.get('/api/manuscripts', async (req, res) => {
 
 // API endpoint for handling translations
 app.post('/api/translate', async (req, res) => {
-    try {
-        const textToTranslate = req.body.text;
-        if (!textToTranslate) {
-            return res.status(400).json({ error: 'No text provided for translation.' });
-        }
-        
-        const prompt = `Translate the following Ancient Greek text to English. Provide only the English translation and nothing else:\n\n${textToTranslate}`;
-        const [result] = await generativeModel.generateContent([prompt]);
-        const translation = result.response.candidates[0].content.parts[0].text;
-        
-        res.json({ translation });
-    } catch (error) {
-        console.error('Error during translation:', error);
-        res.status(500).send('Failed to translate text.');
-    }
+    // Return a 503 Service Unavailable error as Vertex AI is disabled.
+    res.status(503).json({ 
+        error: 'Translation service is not available.' 
+    });
 });
 
 // Serve the built React app
