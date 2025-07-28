@@ -15,46 +15,44 @@ const runNameMapping = {
 };
 
 
-// --- API SIMULATION ---
-// In a real application, this function would make a network request to your backend.
-// The backend would be responsible for reading the files from Google Cloud Storage
-// and returning the data in this JSON format.
-const fetchDataFromApi = async () => {
-  console.log("Fetching data from the remote source...");
-  // This is where the data from your XML files would be structured by the backend.
-  const fileSystemData = {
-    "originals": {
-      "1-4_1.1.xml": `<manuscript><line page="1" line="1">αρχη του ευαγγελιου</line><line page="1" line="2">ιησου χριστου υιου θεου</line><line page="1" line="3" /><line page="1" line="4" /><line page="1" line="5">φωνη βοωντος εν τη ερημω</line></manuscript>`,
-      "9-12_46.12.xml": `<manuscript><line page="46" line="8">πάλιν δὲ καὶ περὶ τῆς γέν</line><line page="46" line="9">[νη]ς τοῦ σώματος αὐτοῦ</line><line page="46" line="10">[ἔγρα]ψ[εν], ὁ[μοί]ως δὲ καὶ</line><line page="46" line="11">[..... ....]ης ἐκεί</line><line page="46" line="12">[νης</line><line page="46" line="13"/><line page="46" line="14"/><line page="46" line="15"/><line page="46" line="16"/><line page="46" line="17"/><line page="46" line="18"/><line page="46" line="19"/><line page="46" line="20"/><line page="46" line="21"/><line page="46" line="22"/><line page="46" line="23"/><line page="47" line="1">ἁμαρτάνει. ὁ γάρ τοι βου</line><line page="47" line="2">λόμενος ἀκουέτω καὶ</line></manuscript>`
-    },
-    "reconstructions": {
-      "gemini-round-1": {
-        "1-4_1.1.xml": `<manuscript><line page="1" line="3">καθως γεγραπται εν τω ησαια</line><line page="1" line="4">τω προφητη ιδου αποστελλω</line></manuscript>`,
-        "9-12_46.12.xml": `<manuscript><line page="46" line="13">τῆς ἀληθείας τῆς ἐκ θεοῦ</line><line page="46" line="14">οὐκ ἀντιλέγει τοῖς ἔργοις</line><line page="46" line="15">ἀλλὰ καὶ βεβαιοῖ αὐτά.</line></manuscript>`,
-        "9-12_46.12_test_input.xml": `<manuscript><line>IGNORE ME</line></manuscript>`
-      },
-      "gemini-round-2": { "9-12_46.12.xml": `<manuscript><line page="46" line="13">καὶ περὶ τῆς ψυχῆς τῆς</line><line page="46" line="14">ἀνθρωπίνης, ἣν ἔπλασεν</line><line page="46" line="15">ὁ θεὸς κατ’ εἰκόνα ἰδίαν.</line></manuscript>` },
-      "gpt-round-1": { "9-12_46.12.xml": `<manuscript><line page="46" line="13">περὶ τῆς ἐνσάρκου ζωῆς</line><line page="46" line="14">τοῦ κυρίου ἡμῶν Ἰησοῦ</line><line page="46" line="15">Χριστοῦ, ἣν ἐφανέρωσεν</line></manuscript>` },
-      "gpt-round-2": { "9-12_46.12.xml": `<manuscript><line page="46" line="13">τῆς κλήσεως ἧς ἐκλήθημεν</line><line page="46" line="14">ἐν χάριτι καὶ ἀληθείᾳ</line><line page="46" line="15">διὰ τοῦ εὐαγγελίου αὐτοῦ.</line></manuscript>` },
-      "claude-round-1": { "9-12_46.12.xml": `<manuscript><line page="46" line="13">τῶν μυστηρίων τοῦ φωτός</line><line page="46" line="14">ἃ ἐξεκαλύφθη αὐτῷ ἐν</line><line page="46" line="15">τῇ ἀποκαλύψει τῇ μεγάλῃ</line></manuscript>` },
-      "claude-round-2": { "9-12_46.12.xml": `<manuscript><line page="46" line="13">τῆς ἄνωθεν σοφίας, ἣν</line><line page="46" line="14">ὁ πατὴρ ἀπεκάλυψεν ἡμῖν</line><line page="46" line="15">ἐν τῷ υἱῷ αὐτοῦ τῷ ἀγαπητῷ</line></manuscript>` }
-    }
-  };
+// --- API FUNCTIONS ---
+// In a real application, these functions make network requests to your own backend server.
+// The backend is responsible for fetching data from Cloud Storage or calling external APIs.
 
-  // Simulate network delay
-  return new Promise(resolve => {
-    setTimeout(() => {
-      console.log("Data fetched successfully.");
-      resolve(fileSystemData);
-    }, 1500); 
-  });
+const fetchDataFromApi = async () => {
+  // This function fetches the manuscript data from our backend's API endpoint.
+  // The backend, in turn, gets the data from Google Cloud Storage.
+  console.log("Fetching manuscript data from backend...");
   
-  // ** REAL-WORLD IMPLEMENTATION EXAMPLE **
-  // const response = await fetch('https://your-backend-api.com/manuscripts');
-  // if (!response.ok) {
-  //   throw new Error('Failed to fetch data');
-  // }
-  // return await response.json();
+  // REAL-WORLD IMPLEMENTATION:
+  const response = await fetch('/api/manuscripts');
+  if (!response.ok) {
+    throw new Error(`Failed to fetch manuscript data: ${response.statusText}`);
+  }
+  const data = await response.json();
+  console.log("Manuscript data fetched successfully.");
+  return data;
+};
+
+const translateTextViaApi = async (textToTranslate) => {
+    // This function sends text to our backend's translation endpoint.
+    // The backend securely handles the API key and calls the Google AI service.
+    console.log("Sending text to backend for translation...");
+
+    const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: textToTranslate }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Translation request failed: ${response.statusText}`);
+    }
+    const data = await response.json();
+    console.log("Translation received from backend.");
+    return data.translation;
 };
 
 
@@ -83,29 +81,6 @@ const getLacunaSize = (fileName) => {
   return 'other';
 };
 
-const translateText = async (textToTranslate) => {
-    const prompt = `Translate the following Ancient Greek text to English. Provide only the English translation and nothing else:\n\n${textToTranslate}`;
-    const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-    const payload = { contents: chatHistory };
-    const apiKey = ""; 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-        const result = await response.json();
-        if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-            return result.candidates[0].content.parts[0].text;
-        }
-        return "Translation could not be generated.";
-    } catch (error) {
-        console.error("Translation error:", error);
-        return `Error during translation: ${error.message}`;
-    }
-};
 
 // --- REACT COMPONENTS ---
 
@@ -245,20 +220,28 @@ export default function App() {
   // Data Loading and Processing Effect
   useEffect(() => {
     const loadAndProcessData = async () => {
+        // In a real deployment, the backend would fetch from GCS.
+        // For the live preview, we'll simulate the backend's response directly.
+        const simulateBackendResponse = () => ({
+            "originals": { "9-12_46.12.xml": `<manuscript><line page="46" line="8">πάλιν δὲ καὶ περὶ τῆς γέν</line><line page="46" line="9">[νη]ς τοῦ σώματος αὐτοῦ</line><line page="46" line="10">[ἔγρα]ψ[εν], ὁ[μοί]ως δὲ καὶ</line><line page="46" line="11">[..... ....]ης ἐκεί</line><line page="46" line="12">[νης</line><line page="46" line="13"/><line page="46" line="14"/><line page="46" line="15"/><line page="46" line="16"/><line page="46" line="17"/><line page="46" line="18"/><line page="46" line="19"/><line page="46" line="20"/><line page="46" line="21"/><line page="46" line="22"/><line page="46" line="23"/><line page="47" line="1">ἁμαρτάνει. ὁ γάρ τοι βου</line><line page="47" line="2">λόμενος ἀκουέτω καὶ</line></manuscript>`},
+            "reconstructions": { "gemini-round-1": { "9-12_46.12.xml": `<manuscript><line page="46" line="13">τῆς ἀληθείας τῆς ἐκ θεοῦ</line></manuscript>`}}
+        });
+
         try {
-            const mockFileSystem = await fetchDataFromApi();
+            // const fileSystemData = await fetchDataFromApi(); // This would be used in production
+            const fileSystemData = simulateBackendResponse(); // Using simulation for live preview
             
             const loadedModels = new Set();
-            const originalFiles = Object.keys(mockFileSystem.originals)
+            const originalFiles = Object.keys(fileSystemData.originals)
                 .filter(fileName => !fileName.endsWith('_test_input.xml'));
 
             const loadedData = originalFiles.map(fileName => {
-              const originalXML = mockFileSystem.originals[fileName];
+              const originalXML = fileSystemData.originals[fileName];
               const originalLines = parseXML(originalXML);
               const reconstructions = {};
 
-              for (const folderName in mockFileSystem.reconstructions) {
-                  if (mockFileSystem.reconstructions[folderName][fileName]) {
+              for (const folderName in fileSystemData.reconstructions) {
+                  if (fileSystemData.reconstructions[folderName][fileName]) {
                       const parts = folderName.split('-');
                       const modelKey = parts[0];
                       const runKey = parts.slice(1).join('-');
@@ -267,7 +250,7 @@ export default function App() {
                       const fullModelName = `${modelName} ${runName}`;
                       loadedModels.add(fullModelName);
                       
-                      const reconstructionXML = mockFileSystem.reconstructions[folderName][fileName];
+                      const reconstructionXML = fileSystemData.reconstructions[folderName][fileName];
                       const reconstructionLines = parseXML(reconstructionXML, true);
                       
                       let currentReconLine = 0;
@@ -297,7 +280,10 @@ export default function App() {
         }
     };
 
-    loadAndProcessData();
+    // Use a timeout to ensure the loading spinner is visible in the preview
+    setTimeout(() => {
+        loadAndProcessData();
+    }, 500);
   }, []);
 
   const toggleModel = (model) => {
@@ -316,9 +302,14 @@ export default function App() {
     setIsModalOpen(true);
     setIsLoadingTranslation(true);
     setTranslatedText('');
-    const translation = await translateText(text);
-    setTranslatedText(translation);
-    setIsLoadingTranslation(false);
+    try {
+        const translation = await translateTextViaApi(text);
+        setTranslatedText(translation);
+    } catch (err) {
+        setTranslatedText(`Error: ${err.message}`);
+    } finally {
+        setIsLoadingTranslation(false);
+    }
   };
 
   return (
