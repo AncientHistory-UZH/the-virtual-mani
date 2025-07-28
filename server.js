@@ -13,13 +13,8 @@ const DATA_PATH = '/data';
 async function getManuscriptData() {
     const fileSystemData = { originals: {}, reconstructions: {} };
 
-    try {
-        await fs.access(DATA_PATH);
-    } catch (e) {
-        console.error(`FATAL: Data directory not found at path: ${DATA_PATH}. Please ensure the volume is mounted correctly and the path is correct.`);
-        throw new Error(`Server configuration error: Data directory not found at ${DATA_PATH}.`);
-    }
-
+    // The check for the directory is now implicitly handled by fs.readdir.
+    // If it fails, the catch block in the API handler will report it.
     const topLevelItems = await fs.readdir(DATA_PATH);
     console.log(`Found top-level items in /data: ${topLevelItems.join(', ')}`);
 
@@ -61,9 +56,15 @@ app.get('/api/manuscripts', async (req, res) => {
         res.json(data);
     } catch (error) {
         console.error('--- DETAILED SERVER ERROR ---');
-        console.error(error);
-        console.error('--- END DETAILED ERROR ---');
-        res.status(500).send(`Failed to retrieve manuscript data. Server-side error: ${error.message}`);
+        // Provide a more specific error if the directory doesn't exist
+        if (error.code === 'ENOENT') {
+            const detailedError = new Error(`Server configuration error: The data directory does not exist at path '${DATA_PATH}'. Please verify the volume mount.`);
+            console.error(detailedError);
+            res.status(500).send(`Failed to retrieve manuscript data. Server-side error: ${detailedError.message}`);
+        } else {
+            console.error(error);
+            res.status(500).send(`Failed to retrieve manuscript data. Server-side error: ${error.message}`);
+        }
     }
 });
 
