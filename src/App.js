@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronsUpDown, Check, X, BookOpen, Book, Loader } from 'lucide-react';
 
 // --- MODEL & RUN NAME MAPPINGS ---
-// This configuration remains to map folder names to display names.
 const modelNameMapping = {
     'gpt': 'GPT-4o',
     'gemini': 'Gemini 1.5',
@@ -16,11 +15,11 @@ const runNameMapping = {
 
 
 // --- API FUNCTIONS ---
-// These functions make network requests to your own backend server.
+// These functions make network requests to the backend server.
 const fetchDataFromApi = async () => {
-  // This function fetches the manuscript data from our backend's API endpoint.
+  // Fetches manuscript data from the backend's API endpoint.
   // The backend reads the data from the mounted /data directory.
-  const apiUrl = `${window.location.origin}/api/manuscripts`;
+  const apiUrl = '/api/manuscripts';
   console.log(`Fetching manuscript data from backend at: ${apiUrl}`);
   const response = await fetch(apiUrl);
   if (!response.ok) {
@@ -33,9 +32,9 @@ const fetchDataFromApi = async () => {
 };
 
 const translateTextViaApi = async (textToTranslate) => {
-    // This function sends text to our backend's translation endpoint.
+    // Sends text to the backend's translation endpoint.
     // The backend securely handles the API key and calls the Google AI service.
-    const apiUrl = `${window.location.origin}/api/translate`;
+    const apiUrl = '/api/translate';
     console.log(`Sending text to backend for translation at: ${apiUrl}`);
     const response = await fetch(apiUrl, {
         method: 'POST',

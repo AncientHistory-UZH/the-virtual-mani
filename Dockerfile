@@ -10,6 +10,7 @@ RUN npm run build
 FROM node:18-alpine
 WORKDIR /app
 COPY package.json ./
+# Install only production dependencies
 RUN npm install --only=production
 
 # Copy the backend server and the built frontend from the build stage

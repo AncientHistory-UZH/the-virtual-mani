@@ -1,5 +1,5 @@
 const express = require('express');
-const fs = require('fs/promises'); // Using the promise-based file system module
+const fs = require('fs/promises');
 const path = require('path');
 const { VertexAI } = require('@google-cloud/aiplatform');
 
@@ -7,11 +7,10 @@ const app = express();
 app.use(express.json());
 const port = process.env.PORT || 8080;
 
-// --- Data Path Configuration ---
 // This is the path where the Cloud Storage bucket is mounted inside the container.
 const DATA_PATH = '/data';
 
-// --- Vertex AI (Translation) Configuration ---
+// Vertex AI (Translation) Configuration
 const project = process.env.GCLOUD_PROJECT;
 const location = 'us-central1';
 const vertexAI = new VertexAI({ project, location });
@@ -19,15 +18,16 @@ const generativeModel = vertexAI.getGenerativeModel({
   model: 'gemini-1.5-flash-001',
 });
 
-// This function now reads from the local filesystem at /data
 async function getManuscriptData() {
     const fileSystemData = { originals: {}, reconstructions: {} };
     const topLevelFolders = await fs.readdir(DATA_PATH);
 
     for (const folderName of topLevelFolders) {
         const folderPath = path.join(DATA_PATH, folderName);
-        const files = await fs.readdir(folderPath);
+        const stats = await fs.stat(folderPath);
+        if (!stats.isDirectory()) continue;
 
+        const files = await fs.readdir(folderPath);
         for (const fileName of files) {
             if (fileName.endsWith('.xml') && !fileName.endsWith('_test_input.xml')) {
                 const filePath = path.join(folderPath, fileName);
@@ -86,3 +86,4 @@ app.get('*', (req, res) => {
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
+
