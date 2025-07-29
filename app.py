@@ -193,9 +193,16 @@ st.markdown("An AI-Assisted Manuscript Reconstruction Comparator")
 
 with st.expander("About This Project", expanded=True):
     st.markdown("""
-    This application serves as an interactive tool for the philological study of fragmentary texts, using the Cologne Mani Codex (CMC) as a primary case study. It allows for the systematic evaluation of Large Language Models (LLMs)—such as GPT-4o, Gemini 1.5, and Claude Sonnet 3.5—in the complex task of textual reconstruction.
+    This application serves as an interactive tool for the philological study of fragmentary texts, using the Cologne Mani Codex (CMC) as a primary case study. It allows for the systematic evaluation of Large Language Models (LLMs), such as GPT-4o, Gemini 1.5, and Claude Sonnet 3.5, in the complex task of textual reconstruction.
 
-    Users can load manuscripts with missing sections (lacunae) and compare various AI-generated completions side-by-side. The goal is to situate these powerful new technologies within traditional scholarly workflows, highlighting not only their potential to propose plausible reconstructions but also the epistemological risks they pose, such as grammatical misalignments or the 'hallucination' of historically incongruous content. This tool is designed to support the critical human oversight essential for integrating AI into the interpretation of historical texts, fostering a more transparent, reproducible, and critically aware digital philology.
+    Users see reconstructions by LLMs of missing sections (lacunae) as they appear in the edition from Koenen & Römer (1988) and can compare the completions side-by-side. The goal is to situate these powerful new technologies within traditional scholarly workflows, highlighting not only their potential to propose plausible reconstructions but also the epistemological risks they pose, such as grammatical misalignments or the 'hallucination' of historically incongruous content. This tool is designed to support the critical human oversight essential for integrating AI into the interpretation of historical texts, fostering a more transparent, reproducible, and critically aware digital philology.
+    
+    Upon providing an API key for any other LLM, users have the opportunity to translate a specific reconstruction to English.
+                
+    For more details, please see the paper (TBD)-
+    
+    Contact: Phillip B. Ströbel (phillip.stroebel@uzh.ch)
+    
     """)
 
 # --- Sidebar Controls ---
