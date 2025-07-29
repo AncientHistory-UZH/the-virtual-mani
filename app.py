@@ -162,7 +162,7 @@ def display_manuscript(manuscript, selected_models, api_key):
         st.subheader("Original")
         for line in manuscript.original_lines:
             text = line['text'] if line['text'] else "..."
-            st.markdown(f"<span style='font-family: monospace; color: #888;'>{line['page']}:{line['line']}</span> &nbsp; {text}", unsafe_allow_html=True)
+            st.markdown(f"<span style='font-family: monospace; color: #888;'>{line['page']}:{line['line']}</span>; {text}", unsafe_allow_html=True)
         
         original_text = manuscript.get_full_text()
         translation_popover(original_text, "Original", f"popover_orig_{manuscript.id}")
