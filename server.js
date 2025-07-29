@@ -1,49 +1,75 @@
 const express = require('express');
-const fs = require('fs/promises');
 const path = require('path');
+const { Storage } = require('@google-cloud/storage');
 
 const app = express();
 app.use(express.json());
 const port = process.env.PORT || 8080;
 
-// This is the path where the Cloud Storage bucket is mounted inside the container.
-const DATA_PATH = '/data';
+// Initialize Google Cloud Storage
+const storage = new Storage();
+const BUCKET_NAME = process.env.GCS_BUCKET_NAME || 'the-virtual-mani'; // Set this in Cloud Run environment variables
 
-// This function now reads from the local filesystem at /data
+console.log('Server starting...');
+console.log('GCS Bucket Name:', BUCKET_NAME);
+
+// Function to read manuscript data from GCS bucket
 async function getManuscriptData() {
     const fileSystemData = { originals: {}, reconstructions: {} };
-
-    // The check for the directory is now implicitly handled by fs.readdir.
-    // If it fails, the catch block in the API handler will report it.
-    const topLevelItems = await fs.readdir(DATA_PATH);
-    console.log(`Found top-level items in /data: ${topLevelItems.join(', ')}`);
-
-    for (const folderName of topLevelItems) {
-        const folderPath = path.join(DATA_PATH, folderName);
-        const stats = await fs.stat(folderPath);
-        if (!stats.isDirectory()) {
-            console.log(`Skipping item '${folderName}' because it is not a directory.`);
-            continue;
-        }
-
-        const files = await fs.readdir(folderPath);
-        for (const fileName of files) {
-            if (fileName.endsWith('.xml') && !fileName.endsWith('_test_input.xml')) {
-                const filePath = path.join(folderPath, fileName);
-                const content = await fs.readFile(filePath, 'utf8');
-
-                if (folderName === 'originals') {
-                    fileSystemData.originals[fileName] = content;
-                } else {
-                    if (!fileSystemData.reconstructions[folderName]) {
-                        fileSystemData.reconstructions[folderName] = {};
-                    }
-                    fileSystemData.reconstructions[folderName][fileName] = content;
+    
+    try {
+        const bucket = storage.bucket(BUCKET_NAME);
+        
+        // List all files in the bucket
+        const [files] = await bucket.getFiles();
+        console.log(`Found ${files.length} files in bucket ${BUCKET_NAME}`);
+        
+        // Process each file
+        for (const file of files) {
+            const fileName = file.name;
+            
+            // Skip non-XML files and test input files
+            if (!fileName.endsWith('.xml') || fileName.endsWith('_test_input.xml')) {
+                continue;
+            }
+            
+            // Parse the file path to determine folder structure
+            const pathParts = fileName.split('/');
+            
+            if (pathParts.length < 2) {
+                console.log(`Skipping file with unexpected path structure: ${fileName}`);
+                continue;
+            }
+            
+            const folderName = pathParts[0];
+            const baseFileName = pathParts[pathParts.length - 1];
+            
+            // Download file content
+            console.log(`Reading file: ${fileName}`);
+            const [contents] = await file.download();
+            const content = contents.toString('utf8');
+            
+            // Organize data based on folder structure
+            if (folderName === 'originals') {
+                fileSystemData.originals[baseFileName] = content;
+            } else {
+                // It's a reconstruction folder
+                if (!fileSystemData.reconstructions[folderName]) {
+                    fileSystemData.reconstructions[folderName] = {};
                 }
+                fileSystemData.reconstructions[folderName][baseFileName] = content;
             }
         }
+        
+        console.log(`Loaded ${Object.keys(fileSystemData.originals).length} original files`);
+        console.log(`Loaded reconstructions from ${Object.keys(fileSystemData.reconstructions).length} folders`);
+        
+        return fileSystemData;
+        
+    } catch (error) {
+        console.error('Error reading from GCS bucket:', error);
+        throw error;
     }
-    return fileSystemData;
 }
 
 // API endpoint for fetching manuscript data
@@ -51,19 +77,26 @@ app.get('/api/manuscripts', async (req, res) => {
     try {
         const data = await getManuscriptData();
         if (Object.keys(data.originals).length === 0) {
-            console.warn("Warning: Manuscript data was read successfully, but the 'originals' directory appears to be empty or contain no valid .xml files.");
+            console.warn("Warning: No original manuscripts found in the bucket.");
         }
         res.json(data);
     } catch (error) {
         console.error('--- DETAILED SERVER ERROR ---');
-        // Provide a more specific error if the directory doesn't exist
-        if (error.code === 'ENOENT') {
-            const detailedError = new Error(`Server configuration error: The data directory does not exist at path '${DATA_PATH}'. Please verify the volume mount.`);
-            console.error(detailedError);
-            res.status(500).send(`Failed to retrieve manuscript data. Server-side error: ${detailedError.message}`);
+        console.error(error);
+        
+        // Provide more specific error messages
+        if (error.code === 404) {
+            res.status(500).json({ 
+                error: `Bucket '${BUCKET_NAME}' not found. Please check the bucket name and permissions.` 
+            });
+        } else if (error.code === 403) {
+            res.status(500).json({ 
+                error: 'Permission denied. Please check that the service account has access to the bucket.' 
+            });
         } else {
-            console.error(error);
-            res.status(500).send(`Failed to retrieve manuscript data. Server-side error: ${error.message}`);
+            res.status(500).json({ 
+                error: `Failed to retrieve manuscript data: ${error.message}` 
+            });
         }
     }
 });
